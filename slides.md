@@ -17,6 +17,8 @@ total dedupped: 2.9 MiB
 dedupping errors: 0
 ```
 
+Theses slides are licensed under [CC BY](https://creativecommons.org/licenses/by/4.0/) license.
+
 ---
 
 # Profiling `(*os.File).Read`.
@@ -378,3 +380,9 @@ loop(func() { fmt.Println("Bonjour !") }, 1024*1024*1024)
 Once one compiler implements TCO for the example above, rather than being "wrong" everywhere, users could file bugs arguing « but it works on $COMPILER ».
 
 It's not fun to have go code that only works on some go compilers.
+
+---
+
+# Thanks
+
+[Slides](https://github.com/Jorropo/why-go-does-not-have-TCO)

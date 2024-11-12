@@ -1,4 +1,4 @@
-# Why go does not have TCO ?
+# Why go does not have Tail-Call-Optimization (TCO) ?
 
 https://github.com/Jorropo/thunderdup
 

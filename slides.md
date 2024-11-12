@@ -54,7 +54,7 @@ func read() error {
           │          
           │          
   ┌───────▼─────┐    
-  │Syscall6 90% │    
+  │Syscall6 95% │    
   └─────────────┘    
 ```
 
@@ -89,18 +89,19 @@ doas perf record -g ./read-benchmark.test
 ```
 ```
 ...
-- 89.34% vfs_read
-    - 83.81% filemap_read
-      - 73.67% filemap_get_pages
-          - 70.13% page_cache_ra_unbounded
-            + 30.32% filemap_add_folio
-            + 23.82% folio_alloc_noprof
-            + 11.70% read_pages
+- ...
+  - 89.34% vfs_read
+      - 83.81% filemap_read
+        - 73.67% filemap_get_pages
+            - 70.13% page_cache_ra_unbounded
+              + 30.32% filemap_add_folio
+              + 23.82% folio_alloc_noprof
+              + 11.70% read_pages
 ```
 
 ---
 
-# Page cache is expensive
+# Page cache has some overhead
 
 ```
 - 89.34% vfs_read
@@ -191,45 +192,6 @@ static ssize_t btrfs_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 ```
 
 With the winds blowing south-south-east at 18 knots on my particular machine this yields 2GiB/s → 6GiB/s.
-
----
-
-# Why this happens ?
-
-```
-┌──────►                      
-│                             
-│                             
-│                             
-│      ┌─────────────────────┐
-│ ┌────►vfs_read:            │
-│ │    │RP = ...             │
-└─┼────┼RB                   │
-  │    │...                  │
-  │    ├─────────────────────┤
-  │    │btrfs_file_read_iter:│
-  │    │RP = vfs_read        │
-  └────┼RB                   │
-       │...                  │
-       └─────────────────────┘
-```
-```
-┌──────►...                   
-│                             
-│                             
-│                             
-│      ┌─────────────────────┐
-│ ┌────►vfs_read:            │
-│ │    │RP = ...             │
-└─┼────┼BP                   │
-  │    │...                  │
-  │    ├─────────────────────┤
-  │    │filemap_read:        │
-  │    │RP = vfs_read        │
-  └────┼BP                   │
-       │...                  │
-       └─────────────────────┘
-```
 
 ---
 
@@ -328,6 +290,45 @@ func G(returnPointer) {
   R2 = 44
   goto F
  }
+```
+
+---
+
+# Why this happens ?
+
+```
+┌──────►                      
+│                             
+│                             
+│                             
+│      ┌─────────────────────┐
+│ ┌────►vfs_read:            │
+│ │    │RP = ...             │
+└─┼────┼RB                   │
+  │    │...                  │
+  │    ├─────────────────────┤
+  │    │btrfs_file_read_iter:│
+  │    │RP = vfs_read        │
+  └────┼RB                   │
+       │...                  │
+       └─────────────────────┘
+```
+```
+┌──────►...                   
+│                             
+│                             
+│                             
+│      ┌─────────────────────┐
+│ ┌────►vfs_read:            │
+│ │    │RP = ...             │
+└─┼────┼BP                   │
+  │    │...                  │
+  │    ├─────────────────────┤
+  │    │filemap_read:        │
+  │    │RP = vfs_read        │
+  └────┼BP                   │
+       │...                  │
+       └─────────────────────┘
 ```
 
 ---
